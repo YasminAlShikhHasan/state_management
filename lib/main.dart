@@ -1,11 +1,14 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:newpro/bloc/search_bloc.dart';
-import 'package:newpro/bloc/search_event.dart';
-import 'package:newpro/bloc/search_state.dart';
+import 'package:newpro/theme/theme_switcher_bloc.dart';
+import 'package:newpro/theme/theme_switcher_event.dart';
 
 void main() {
-  runApp(MyApp());
+  //..add : ليتمكن المستخدم من الدخول للحالة الابتدائية اولا
+  runApp(BlocProvider(
+      create: (context) => themeSwitchBloc()..add(setInitialTheme()),
+      child: MyApp()));
 }
 
 class MyApp extends StatelessWidget {
@@ -13,78 +16,40 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider<searchBloc>(
-      create: (_) => searchBloc(),
-      child: const MaterialApp(
-        home: searchWordPage(),
-      ),
+    return BlocBuilder<themeSwitchBloc, ThemeData>(
+      builder: (context, state) {
+        return MaterialApp(
+          theme: state,
+          debugShowCheckedModeBanner: false,
+          home: const HomePage(),
+        );
+      },
     );
   }
 }
 
-class searchWordPage extends StatelessWidget {
-  const searchWordPage({super.key});
+class HomePage extends StatefulWidget {
+  const HomePage({super.key});
 
+  @override
+  State<HomePage> createState() => _HomePageState();
+}
+
+class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Project Number1"),
-        centerTitle: true,
+        actions: [
+          BlocBuilder<themeSwitchBloc, ThemeData>(builder: (context, state) {
+            return CupertinoSwitch(
+                value: state == ThemeData.dark(),
+                onChanged: (bool value) {
+                  context.read<themeSwitchBloc>().add(switchTheme());
+                });
+          }),
+        ],
       ),
-      body: Column(
-        children: [_searchField(context), _words(context)],
-      ),
-    );
-  }
-
-  Widget _searchField(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(8.0),
-      child: TextField(
-        decoration: InputDecoration(
-          filled: true,
-          fillColor: Colors.white,
-          hintText: "search....",
-          contentPadding: const EdgeInsets.all(15),
-          enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(10),
-              borderSide: const BorderSide(color: Colors.grey, width: 1)),
-          focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(10),
-              borderSide: const BorderSide(color: Colors.grey, width: 1)),
-        ),
-        onChanged: (value) {
-          context.read<searchBloc>().add(searchWord(word: value));
-        },
-      ),
-    );
-  }
-
-  Widget _words(BuildContext context) {
-    return BlocBuilder<searchBloc, searchState>(
-      builder: (context, state) {
-        if (state is loadedWord) {
-          return ListView.separated(
-              shrinkWrap: true,
-              padding: const EdgeInsets.all(8),
-              itemBuilder: (context, index) {
-                return Text(
-                  state.words[index],
-                  style: const TextStyle(
-                      color: Colors.black87,
-                      fontWeight: FontWeight.w400,
-                      fontSize: 13),
-                );
-              },
-              separatorBuilder: ((context, index) => const Divider(
-                    thickness: 0.2,
-                    color: Colors.grey,
-                  )),
-              itemCount: state.words.length);
-        }
-        return Container();
-      },
     );
   }
 }
